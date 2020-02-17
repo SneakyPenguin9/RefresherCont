@@ -1,0 +1,240 @@
+#include <iostream>
+#include <fstream>
+#include <string>
+#include <vector>
+#include <algorithm>
+#include <iomanip>
+using namespace std;
+
+struct Record {
+    string ID;
+    string name;
+    int amount;
+    double price;
+
+};
+
+bool die(const string& msg);
+
+//print functions
+void printRec(Record rec);
+void printVec(vector<Record> const& rec);
+void printArr(Record* rec[], int size);
+void inventoryReport(vector<Record> const& rec);
+
+//sorting functions 
+void bubbleSort(Record* arr[], int size, int n); //checking pointed to objs by name/ID
+void swap(Record*& xp, Record*& yp); //reference so pointers swap, not dealing with what they're pointing to
+
+//search functions
+int bSearch(Record* rec[], int size, string needle, int searchBy);
+int searchHelper(Record* rec[], int offset, int size, string needle, int searchBy);
+
+//
+
+int main() {
+    vector<Record> records;
+    Record line;
+    int choice;
+    int sortBy;
+    int recPos;
+    string search;
+
+    //populate file
+    ofstream write("Refresher.txt");
+    write << "997196478 StroLLer 25 134.78" << endl << "123123123 Cake 55 2.78" << endl
+        << "029392182 Candy 100 0.23" << endl << "293847165 Taco 29 1.25" << endl
+        << "837294028 Boat 2 12342.23" << endl << "948275921 Shoe 989 79.99" << endl << "192842758 Sunglasses 9817 123.33" << endl;
+    write.close();
+    ifstream myfile("Refresher.txt");
+    if (!myfile.is_open()) {
+        die("file not open");
+    }
+
+    //fill obj vector with file contents
+    while (myfile >> line.ID >> line.name >> line.amount >> line.price) {
+        records.push_back(line);
+    }
+    if (!myfile.eof()) {
+        die("corrupt data");
+    }
+
+    //creating and filling array of pointers
+    Record** sortedRec = new Record * [records.size()];
+    for (int i = 0; i < records.size(); i++) {
+        sortedRec[i] = &records[i];
+    }
+    do {
+        cout << " 1:Print records." << endl
+            << " 2:Print sorted records." << endl
+            << " 3:Search for item." << endl
+            << " 4:Print inventory report." << endl
+            << " 5:Exit Program." << endl;
+        cin >> choice;
+        switch (choice) {
+
+        case 1: //printing unsorted items
+            printVec(records);
+            break;
+
+        case 2: //sorting and printing items
+            do {
+                cout << " Sort by: " << endl
+                    << "  1:ID" << endl
+                    << "  2:Name" << endl
+                    << "  3:Amount" << endl
+                    << "  4:Price" << endl
+                    << "  5:Go back." << endl;
+                cin >> sortBy;
+
+                if (sortBy < 1 || sortBy > 5) {
+                    cout << "invalid option" << endl;
+                }
+
+            } while (sortBy < 1 || sortBy > 5);
+            if (sortBy < 5) {
+                bubbleSort(sortedRec, records.size(), sortBy);
+                printArr(sortedRec, records.size());
+            }
+            break;
+        case 3: //finding item
+            do {
+                cout << " Search by: " << endl
+                    << "  1:ID" << endl
+                    << "  2:Name" << endl
+                    << "  3:Go back." << endl;
+                cin >> sortBy;
+
+                if (sortBy < 1 || sortBy > 3) {
+                    cout << "invalid option" << endl;
+                }
+
+            } while (sortBy < 1 || sortBy > 3);
+
+            if (sortBy == 1) {
+                cout << "Enter ID: ";
+                cin >> search;
+            }
+            else if (sortBy == 2) {
+                cout << "Enter Name: ";
+                cin >> search;
+            }
+            recPos = bSearch(sortedRec, records.size(), search, sortBy); //custom binary search for pointers to vector objs
+            if (recPos == -1)
+                cout << "Record not found" << endl;
+            else
+                printRec(*sortedRec[recPos]); //must pass as what's being pointed to
+
+            break;
+        case 4:
+            inventoryReport(records);
+            break;
+        case 5: //nothing happens so loop will end
+            break;
+        default: //input check
+            cout << "Invalid option" << endl;
+        }
+    } while (choice != 5);
+ 
+    //clear heap
+    delete[] sortedRec;
+}
+
+bool die(const string& msg) {
+    cout << "Error: " << msg << "\n";
+    exit(EXIT_FAILURE);
+}
+
+void printRec(Record rec) {
+    cout << rec.ID << " " << rec.name << " " << rec.amount << " " << rec.price << "\n";
+}
+
+void printVec(vector<Record> const& rec) {
+    for (int i = 0; i < rec.size(); i++)
+        printRec(rec[i]);
+}
+
+
+void printArr(Record* rec[], int size) {
+    for (int i = 0; i < size; i++)
+        printRec(*rec[i]);
+}
+
+void inventoryReport(vector<Record> const& rec) {
+    double worth = 0;
+    for (int i = 0; i < rec.size(); i++)
+        worth += rec[i].price;
+    cout << " InventoryReport:" << endl << "  Unique items: " << rec.size() << endl << "  Total worth: $" << setprecision(2) << fixed << worth << endl;
+}
+
+void bubbleSort(Record* arr[], int size, int n) {
+    for (int i = 0; i < size; i++)
+
+        // Last i elements are already in place  
+        for (int j = 0; j < size - i - 1; j++)
+            switch (n) {
+            case 1:
+                if (arr[j]->ID > arr[j + 1]->ID)
+                    swap(arr[j], arr[j + 1]);
+                break;
+            case 2:
+                if (arr[j]->name > arr[j + 1]->name) {
+                    swap(arr[j], arr[j + 1]);
+                }
+                break;
+            case 3:
+                if (arr[j]->amount > arr[j + 1]->amount)
+                    swap(arr[j], arr[j + 1]);
+                break;
+            case 4:
+                if (arr[j]->price > arr[j + 1]->price)
+                    swap(arr[j], arr[j + 1]);
+                break;
+            }
+
+}
+
+void swap(Record*& xp, Record*& yp)
+{
+    Record* temp = xp;
+    xp = yp;
+    yp = temp;
+}
+
+int bSearch(Record* rec[], int size, string needle, int searchBy) {
+    if (size > 0) {
+        bubbleSort(rec, size, searchBy);
+        return searchHelper(rec, 0, size - 1, needle, searchBy);
+    }
+    else
+        return -1;
+}
+
+int searchHelper(Record* rec[], int left, int right, string needle, int searchBy) {
+    if (right >= left) {
+        int mid = (right - left) / 2;
+        bool goLeft = false; //cuts down recursion calls
+
+        switch (searchBy) {
+        case 1:
+            if (rec[left + mid]->ID == needle)
+                return left + mid;
+            else if (rec[left + mid]->ID > needle)
+                goLeft = true;
+            break;
+        case 2:
+            if (rec[left + mid]->name == needle)
+                return left + mid;
+            else if (rec[left + mid]->name > needle)
+                goLeft = true;
+            break;
+        }
+
+        if (goLeft)
+            return searchHelper(rec, left, (left + mid) - 1, needle, searchBy);
+        else
+            return searchHelper(rec, (left + mid) + 1, right, needle, searchBy);
+    }
+    else
+        return -1;
+}
